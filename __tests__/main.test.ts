@@ -1,42 +1,28 @@
-import { Delays, greeter } from '../src/main';
+import { transformText } from '../src/main';
 
-describe('greeter function', () => {
-  const name = 'John';
-  let hello: string;
-
-  let timeoutSpy: jest.SpyInstance;
-
-  // Act before assertions
-  beforeAll(async () => {
-    // Read more about fake timers
-    // http://facebook.github.io/jest/docs/en/timer-mocks.html#content
-    // Jest 27 now uses "modern" implementation of fake timers
-    // https://jestjs.io/blog/2021/05/25/jest-27#flipping-defaults
-    // https://github.com/facebook/jest/pull/5171
-    jest.useFakeTimers();
-    timeoutSpy = jest.spyOn(global, 'setTimeout');
-
-    const p: Promise<string> = greeter(name);
-    jest.runOnlyPendingTimers();
-    hello = await p;
-  });
-
-  // Teardown (cleanup) after assertions
-  afterAll(() => {
-    timeoutSpy.mockRestore();
-  });
-
+describe('transformText', () => {
   // Assert if setTimeout was called properly
-  it('delays the greeting by 2 seconds', () => {
-    expect(setTimeout).toHaveBeenCalledTimes(1);
-    expect(setTimeout).toHaveBeenLastCalledWith(
-      expect.any(Function),
-      Delays.Long,
-    );
+  it('works for provided example', () => {
+    const text = `Patient presents today with several issues. Number one BMI has increased by 10% since their last visit. Number next patient reports experiencing dizziness several times in the last two weeks. Number next patient has a persistent cough that hasn’t improved for last 4 weeks.`;
+    const transformed = `Patient presents today with several issues.\n1. BMI has increased by 10% since their last visit.\n2. Patient reports experiencing dizziness several times in the last two weeks.\n3. Patient has a persistent cough that hasn’t improved for last 4 weeks.`;
+    expect(transformText(text)).toBe(transformed);
   });
 
-  // Assert greeter result
-  it('greets a user with `Hello, {name}` message', () => {
-    expect(hello).toBe(`Hello, ${name}`);
+  it('properly capitalizes next word', () => {
+    const text = `Number one hello`;
+    const transformed = `1. Hello`;
+    expect(transformText(text)).toBe(transformed);
+  });
+
+  it('works when numbered list starts at end of text', () => {
+    const text = `Patient presents today with several issues. Number one BMI has increased by 10% since their last visit. Number next patient reports experiencing dizziness several times in the last two weeks. Number next patient has a persistent cough that hasn’t improved for last 4 weeks. Number next`;
+    const transformed = `Patient presents today with several issues.\n1. BMI has increased by 10% since their last visit.\n2. Patient reports experiencing dizziness several times in the last two weeks.\n3. Patient has a persistent cough that hasn’t improved for last 4 weeks.\n4.`;
+    expect(transformText(text)).toBe(transformed);
+  });
+
+  it('does not needlessly transform', () => {
+    const text = `Number number eight Number`;
+    const transformed = `Number number eight Number`;
+    expect(transformText(text)).toBe(transformed);
   });
 });
